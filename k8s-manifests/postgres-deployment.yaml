@@ -64,11 +64,6 @@ spec:
           - name: postgres-storage
             mountPath: /var/lib/postgresql/data # Ruta donde Postgres guarda sus datos
         # Nota: El healthcheck de Kubernetes reemplazará al de Docker Compose
-        livenessProbe:
-          exec:
-            command: ["pg_isready", "-h", "kong-database.kong.svc.cluster.local", "-U", "kong", "-d", "kong"]
-          initialDelaySeconds: 30
-          periodSeconds: 10
       volumes:
         - name: postgres-storage
           persistentVolumeClaim:
