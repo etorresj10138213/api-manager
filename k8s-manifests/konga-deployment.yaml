@@ -21,7 +21,7 @@ spec:
           - name: DB_ADAPTER
             value: postgres
           - name: DB_HOST
-            value: kong-database
+            value: kong-database.kong.svc.cluster.local
           - name: DB_USER
             value: kong
           - name: TOKEN_SECRET
