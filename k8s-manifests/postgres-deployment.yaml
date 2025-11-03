@@ -26,14 +26,14 @@ spec:
             sleep 30
             
             # Comandos de creación de ROL/DB condicionales
-            psql -h localhost -U postgres -d postgres -c "DO \$\$
+            psql -h kong-database.svc.cluster.local -U postgres -d postgres -c "DO \$\$
             BEGIN
               IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'kong') THEN
                 CREATE ROLE kong WITH LOGIN PASSWORD 'kong' SUPERUSER;
               END IF;
             END \$\$"
             
-            psql -h localhost -U postgres -d postgres -c "DO \$\$
+            psql -h kong-database.svc.cluster.local -U postgres -d postgres -c "DO \$\$
             BEGIN
               IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'kong') THEN
                 CREATE DATABASE kong OWNER kong;

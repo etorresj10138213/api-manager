@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-database # Nombre de red que Kong y Konga usarán para conectarse (KONG_PG_HOST: kong-database)
+  labels:
+    app: kong-database
+spec:
+  # ClusterIP es el tipo por defecto y es adecuado para bases de datos internas
+  type: ClusterIP 
+  
+  # Selector para identificar el Pod al que enviar el tráfico
+  selector:
+    app: kong-database 
+  
+  ports:
+    - name: postgres-port
+      protocol: TCP
+      port: 5432       # Puerto que el Service expone internamente
+      targetPort: 5432 # Puerto que el Pod de Postgres está escuchando
