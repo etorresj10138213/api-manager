@@ -35,10 +35,6 @@ spec:
             value: "postgres"
         ports:
           - containerPort: 5432
-        volumeMounts:
-          - name: postgres-storage
-            mountPath: /var/lib/postgresql/data # Ruta donde Postgres guarda sus datos
-        # Healthcheck simple para verificar que el servicio esté corriendo
         livenessProbe:
           exec:
             # Revertimos el chequeo al usuario por defecto 'postgres' para simplificar,
@@ -46,8 +42,3 @@ spec:
             command: ["pg_isready", "-U", "postgres", "-d", "kong"] 
           initialDelaySeconds: 15
           periodSeconds: 10
-      
-      volumes:
-        - name: postgres-storage
-          persistentVolumeClaim:
-            claimName: postgres-data-pvc
