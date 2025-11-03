@@ -26,7 +26,7 @@ spec:
             sleep 30
             
             # Comandos de creación de ROL/DB condicionales
-            psql -h kong-database.svc.cluster.local -U postgres -d postgres -c "DO \$\$
+            psql -h kong-database.kong.svc.cluster.local -U postgres -d postgres -c "DO \$\$
             BEGIN
               IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'kong') THEN
                 CREATE ROLE kong WITH LOGIN PASSWORD 'kong' SUPERUSER;
@@ -66,7 +66,7 @@ spec:
         # Nota: El healthcheck de Kubernetes reemplazará al de Docker Compose
         livenessProbe:
           exec:
-            command: ["pg_isready", "-h", "kong-database.svc.cluster.local", "-U", "kong", "-d", "kong"]
+            command: ["pg_isready", "-h", "kong-database.kong.svc.cluster.local", "-U", "kong", "-d", "kong"]
           initialDelaySeconds: 30
           periodSeconds: 10
       volumes:
