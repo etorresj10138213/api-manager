@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kong-db-init-job
+spec:
+  # Permite que el pod falle y se reintente si hay un error de conexión temporal
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: db-initializer
+        image: postgres:11 # Usar una imagen cliente que tenga 'psql'
+        env:
+          # Variables de conexión a la DB
+          - name: PGHOST
+            value: kong-database.kong.svc.cluster.local # Nombre del servicio de Kubernetes de la DB
+          - name: PGUSER
+            value: postgres # Usuario con privilegios para crear roles/DBs
+          - name: PGPASSWORD
+            value: postgres # Contraseña del usuario 'postgres' (¡Usar Secrets en producción!)
+          - name: POSTGRES_PASSWORD
+            value: kong # Contraseña del rol 'kong' a crear
+            
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          echo "Esperando que el servicio kong-database esté disponible..."
+          # Espera inteligente a que el servicio de PostgreSQL esté accesible por red
+          until pg_isready -h $PGHOST -U $PGUSER; do
+            echo "Servidor de DB no listo. Esperando..."
+            sleep 5
+          done
+          echo "Conexión exitosa. Iniciando configuración de ROL/DB..."
+          
+          # 1. Crear ROL 'kong' si no existe
+          psql -d postgres -c "DO \$\$
+          BEGIN
+            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'kong') THEN
+              CREATE ROLE kong WITH LOGIN PASSWORD '${POSTGRES_PASSWORD}' CREATEDB;
+              RAISE NOTICE 'Rol kong creado exitosamente.';
+            END IF;
+          END \$\$"
+          
+          # 2. Crear BBDD 'kong' con OWNER 'kong' si no existe
+          psql -d postgres -c "DO \$\$
+          BEGIN
+            IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'kong') THEN
+              CREATE DATABASE kong OWNER kong;
+              RAISE NOTICE 'Base de datos kong creada exitosamente.';
+            END IF;
+          END \$\$"
+          
+          echo "Inicialización de la base de datos completada."
