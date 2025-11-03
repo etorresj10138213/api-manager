@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong-database
+  labels:
+    app: kong-database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kong-database
+  template:
+    metadata:
+      labels:
+        app: kong-database
+    spec:
+      # Init Container para esperar que la DB esté lista y ejecutar la creación condicional de ROL/DB
+      initContainers:
+      - name: init-db-setup
+        image: postgres:11
+        command: ['sh', '-c']
+        args:
+          - |
+            # Espera a que la DB inicie por primera vez (la creación de usuario ocurre en este paso)
+            /usr/local/bin/docker-entrypoint.sh postgres &
+            sleep 15
+            
+            # Comandos de creación de ROL/DB condicionales
+            psql -U postgres -d postgres -c "DO \$\$
+            BEGIN
+              IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'kong') THEN
+                CREATE ROLE kong WITH LOGIN PASSWORD 'kong' CREATEDB;
+              END IF;
+            END \$\$"
+            
+            psql -U postgres -d postgres -c "DO \$\$
+            BEGIN
+              IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'kong') THEN
+                CREATE DATABASE kong OWNER kong;
+              END IF;
+            END \$\$"
+        volumeMounts:
+          - name: postgres-storage
+            mountPath: /var/lib/postgresql/data
+        env:
+          # Las variables de entorno son necesarias para el entrypoint y el psql
+          - name: POSTGRES_USER
+            value: "postgres"
+          - name: POSTGRES_DB
+            value: "kong"
+          - name: POSTGRES_PASSWORD
+            value: "kong"
+            
+      containers:
+      - name: postgres
+        image: postgres:11
+        env:
+          - name: POSTGRES_USER
+            value: "postgres"
+          - name: POSTGRES_DB
+            value: "kong"
+          - name: POSTGRES_HOST_AUTH_METHOD
+            value: "trust" # Para conexiones locales
+          - name: POSTGRES_PASSWORD
+            value: "kong"
+          - name: POSTGRES_ROOT_PASSWORD
+            value: "postgres"
+        ports:
+          - containerPort: 5432
+        volumeMounts:
+          - name: postgres-storage
+            mountPath: /var/lib/postgresql/data # Ruta donde Postgres guarda sus datos
+        # Nota: El healthcheck de Kubernetes reemplazará al de Docker Compose
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "kong", "-d", "kong"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-data-pvc # Referencia al PVC creado

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong-deployment
+  labels:
+    app: kong
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kong
+  template:
+    metadata:
+      labels:
+        app: kong
+    spec:
+      # Init Container para esperar que las migraciones terminen
+      initContainers:
+      - name: wait-for-migrations
+        image: busybox
+        command: ['sh', '-c', 'until nslookup kong-database; do echo waiting for db; sleep 2; done;'] # Simple espera DNS
+      containers:
+      - name: kong
+        image: kong:latest # Será reemplazada por GCR en el pipeline
+        env:
+          - name: KONG_PG_HOST
+            value: kong-database
+          - name: KONG_PROXY_LISTEN
+            value: 0.0.0.0:8000
+          - name: KONG_PROXY_LISTEN_SSL
+            value: 0.0.0.0:8443
+          - name: KONG_ADMIN_LISTEN
+            value: 0.0.0.0:8001
+        ports:
+          - containerPort: 8000
+          - containerPort: 8443
+          - containerPort: 8001
+        # NOTA: Se asume que las migraciones se ejecutarán manualmente o en otro InitContainer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-proxy
+spec:
+  type: LoadBalancer # Exponer el servicio al exterior (HTTP/S)
+  selector:
+    app: kong
+  ports:
+    - name: proxy-http
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+    - name: admin-api
+      protocol: TCP
+      port: 8001
+      targetPort: 8001
