@@ -1,0 +1,75 @@
+name: Despliegue de Kong y Konga a GKE
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
+  GKE_ZONE: ${{ secrets.GKE_ZONE }}
+  IMAGE_REGISTRY: gcr.io
+  KONG_IMAGE_NAME: kong-gateway
+  KONGA_IMAGE_NAME: konga-gui
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. Autenticación en Google Cloud
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }} # Clave de la Cuenta de Servicio (secreta)
+          
+      # 2. Configuración de GKE
+      - name: Configurar gcloud y kubectl
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          # Asegura que las credenciales estén disponibles para Docker y kubectl
+          setup_gcloud: true 
+
+      # 3. Autenticar en Google Container Registry (GCR)
+      - name: Autenticación en GCR
+        run: gcloud auth configure-docker ${{ env.IMAGE_REGISTRY }}
+
+      # 4. Construir y Etiquetar Imágenes 🏗️
+      - name: Construir y etiquetar Kong
+        run: |
+          docker pull kong:latest
+          docker tag kong:latest ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONG_IMAGE_NAME }}:latest
+      
+      - name: Construir y etiquetar Konga
+        run: |
+          docker pull pantsel/konga:next
+          docker tag pantsel/konga:next ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONGA_IMAGE_NAME }}:latest
+
+      # 5. Subir Imágenes a GCR ⬆️
+      - name: Subir imagen de Kong a GCR
+        run: docker push ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONG_IMAGE_NAME }}:latest
+
+      - name: Subir imagen de Konga a GCR
+        run: docker push ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONGA_IMAGE_NAME }}:latest
+
+      # 6. Obtener Credenciales de GKE
+      - name: Obtener credenciales del cluster GKE
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+      
+      # 7. Despliegue a GKE 🚀
+      - name: Desplegar a GKE
+        run: |
+          # Reemplazar la URL de la imagen en los manifiestos de K8s
+          sed -i "s|image: kong:latest|image: ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONG_IMAGE_NAME }}:latest|g" k8s-manifests/kong.yaml
+          sed -i "s|image: pantsel/konga:next|image: ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONGA_IMAGE_NAME }}:latest|g" k8s-manifests/konga.yaml
+
+          # Aplicar los manifiestos de Kubernetes
+          kubectl apply -f k8s-manifests/
