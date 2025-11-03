@@ -72,4 +72,4 @@ jobs:
           sed -i "s|image: pantsel/konga:next|image: ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONGA_IMAGE_NAME }}:latest|g" k8s-manifests/konga-deployment.yaml
 
           # Aplicar los manifiestos de Kubernetes
-          kubectl apply -f k8s-manifests/
+          kubectl apply -n kong -f k8s-manifests/
