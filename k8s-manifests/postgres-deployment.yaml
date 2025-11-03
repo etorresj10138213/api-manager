@@ -23,13 +23,13 @@ spec:
           - |
             # Espera a que la DB inicie por primera vez (la creación de usuario ocurre en este paso)
             /usr/local/bin/docker-entrypoint.sh postgres &
-            sleep 15
+            sleep 30
             
             # Comandos de creación de ROL/DB condicionales
             psql -h localhost -U postgres -d postgres -c "DO \$\$
             BEGIN
               IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'kong') THEN
-                CREATE ROLE kong WITH LOGIN PASSWORD 'kong' CREATEDB;
+                CREATE ROLE kong WITH LOGIN PASSWORD 'kong' SUPERUSER;
               END IF;
             END \$\$"
             
