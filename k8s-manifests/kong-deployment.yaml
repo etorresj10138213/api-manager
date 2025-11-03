@@ -24,7 +24,7 @@ spec:
         image: kong:latest # Será reemplazada por GCR en el pipeline
         env:
           - name: KONG_PG_HOST
-            value: kong-database
+            value: kong-database.kong.svc.cluster.local
           - name: KONG_PROXY_LISTEN
             value: 0.0.0.0:8000
           - name: KONG_PROXY_LISTEN_SSL
