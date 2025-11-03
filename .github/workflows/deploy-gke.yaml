@@ -68,8 +68,8 @@ jobs:
       - name: Desplegar a GKE
         run: |
           # Reemplazar la URL de la imagen en los manifiestos de K8s
-          sed -i "s|image: kong:latest|image: ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONG_IMAGE_NAME }}:latest|g" k8s-manifests/kong.yaml
-          sed -i "s|image: pantsel/konga:next|image: ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONGA_IMAGE_NAME }}:latest|g" k8s-manifests/konga.yaml
+          sed -i "s|image: kong:latest|image: ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONG_IMAGE_NAME }}:latest|g" k8s-manifests/kong-deployment.yaml
+          sed -i "s|image: pantsel/konga:next|image: ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONGA_IMAGE_NAME }}:latest|g" k8s-manifests/konga-deployment.yaml
 
           # Aplicar los manifiestos de Kubernetes
           kubectl apply -f k8s-manifests/
