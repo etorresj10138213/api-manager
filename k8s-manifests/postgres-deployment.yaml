@@ -15,64 +15,16 @@ spec:
         app: kong-database
     spec:
       # ===============================================
-      # INITI CONTAINER: Configuración y Espera Inteligente
-      # ===============================================
-      initContainers:
-      - name: init-db-setup
-        image: postgres:11
-        command: ['sh', '-c']
-        args:
-          - |
-            echo "Iniciando servidor Postgres en background para inicialización..."
-            # 1. Inicia el servidor de Postgres en background.
-            /usr/local/bin/docker-entrypoint.sh postgres &
-            
-            # 2. Espera inteligente usando pg_isready (más fiable que un 'sleep' fijo).
-            until pg_isready -U postgres -d postgres; do
-              echo "Esperando que el servidor Postgres esté listo..."
-              sleep 5
-            done
-            echo "Servidor Postgres listo. Continuando con la configuración de ROL/DB."
-            
-            # 3. Crear ROL 'kong' si no existe. (psql se conecta por socket local, ahora garantizado)
-            psql -U postgres -d postgres -c "DO \$\$
-            BEGIN
-              IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'kong') THEN
-                CREATE ROLE kong WITH LOGIN PASSWORD 'kong' CREATEDB;
-              END IF;
-            END \$\$"
-            
-            # 4. Crear BBDD 'kong' si no existe.
-            psql -U postgres -d postgres -c "DO \$\$
-            BEGIN
-              IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'kong') THEN
-                CREATE DATABASE kong OWNER kong;
-              END IF;
-            END \$\$"
-            
-            echo "Configuración inicial de ROL/DB completada."
-            
-        volumeMounts:
-          - name: postgres-storage
-            mountPath: /var/lib/postgresql/data
-        env:
-          # Variables de entorno necesarias para la inicialización
-          - name: POSTGRES_USER
-            value: "postgres"
-          - name: POSTGRES_DB
-            value: "kong"
-          - name: POSTGRES_PASSWORD
-            value: "kong"
-            
-      # ===============================================
-      # CONTENEDOR PRINCIPAL
+      # CONTENEDOR PRINCIPAL (Confía en el Entrypoint por defecto)
       # ===============================================
       containers:
       - name: postgres
         image: postgres:11
+        # El entrypoint por defecto se encarga de la lógica de POSTGRES_USER/DB
         env:
+          # Estas variables crean el usuario 'kong' y la base de datos 'kong' SOLO en el primer inicio.
           - name: POSTGRES_USER
-            value: "postgres"
+            value: "kong" # Usamos 'postgres' como usuario de conexión principal
           - name: POSTGRES_DB
             value: "kong"
           - name: POSTGRES_HOST_AUTH_METHOD
@@ -85,11 +37,14 @@ spec:
           - containerPort: 5432
         volumeMounts:
           - name: postgres-storage
-            mountPath: /var/lib/postgresql/data
+            mountPath: /var/lib/postgresql/data # Ruta donde Postgres guarda sus datos
+        # Healthcheck simple para verificar que el servicio esté corriendo
         livenessProbe:
           exec:
-            command: ["pg_isready", "-U", "kong", "-d", "kong"]
-          initialDelaySeconds: 30
+            # Revertimos el chequeo al usuario por defecto 'postgres' para simplificar,
+            # pero puedes usar 'kong' si la DB se inicializa con el usuario 'kong'.
+            command: ["pg_isready", "-U", "postgres", "-d", "kong"] 
+          initialDelaySeconds: 15
           periodSeconds: 10
       
       volumes:
