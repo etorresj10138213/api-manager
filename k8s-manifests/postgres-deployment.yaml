@@ -41,11 +41,7 @@ spec:
                 CREATE ROLE kong WITH LOGIN PASSWORD 'kong' SUPERUSER;
               END IF;
             END \$\$"            
-            echo "Configuración inicial de ROL/DB completada."
-            
-        volumeMounts:
-          - name: postgres-storage
-            mountPath: /var/lib/postgresql/data
+            echo "Configuración inicial de ROL/DB completada."            
         env:
           # Variables de entorno necesarias para la inicialización
           - name: POSTGRES_USER
