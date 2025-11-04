@@ -24,14 +24,14 @@ spec:
           - name: KONG_PG_PORT
             value: "5432"
           - name: KONG_PG_DATABASE
-            value: "postgres" # Reemplaza con el nombre de tu base de datos
+            value: "kong" # Reemplaza con el nombre de tu base de datos
 
           # USUARIO: Obtiene el valor de un Secret de Kubernetes (Recomendado)
           - name: KONG_PG_USER
-            value: "postgres"
+            value: "kong"
           # CONTRASEÑA: Obtiene el valor de un Secret de Kubernetes (Recomendado)
           - name: KONG_PG_PASSWORD
-            value: "admin"
+            value: "kong"
 
         # El comando que inicializa el esquema de la base de datos
         command: ["/bin/sh", "-c"]
