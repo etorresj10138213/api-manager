@@ -17,7 +17,7 @@ spec:
         env:
           # Variables de conexión a la DB
           - name: PGHOST
-            value: kong-database.kong.svc.cluster.local # Nombre del servicio de Kubernetes de la DB
+            value: kong-database # Nombre del servicio de Kubernetes de la DB
           - name: PGUSER
             value: postgres # Usuario con privilegios para crear roles/DBs
           - name: PGPASSWORD
