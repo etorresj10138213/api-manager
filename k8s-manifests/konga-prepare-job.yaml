@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # Nombre único para la inicialización de la DB de Konga
+  name: konga-db-prepare
+  namespace: kong # ⬅️ Reemplaza con tu namespace
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: konga-preparer
+        image: pantsel/konga:latest # ⬅️ Reemplaza con tu versión
+        command: ["/bin/sh", "-c"]
+        args:
+          - "node ./bin/konga.js prepare --adapter postgres --uri postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_DATABASE}"
+        env:
+          - name: DB_HOST
+            value:  kong-database # ⬅️ Host de tu DB de Konga (ej. "postgres-konga.svc.cluster.local")
+          - name: DB_PORT
+            value: "5432"
+          - name: DB_USER
+            value: postgres # ⬅️ Usuario de la DB de Konga
+          - name: DB_DATABASE
+            value: postgres # ⬅️ Nombre de la DB de Konga (ej. "konga")
+          - name: DB_PASSWORD
+            value: admin
