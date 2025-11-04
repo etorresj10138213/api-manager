@@ -16,11 +16,11 @@ spec:
         env:
           # --- CONFIGURACIÓN DE LA BASE DE DATOS ---
           - name: KONG_DATABASE
-            value: "kong"
+            value: "postgres"
           
           # HOST y PUERTO del PostgreSQL externo
           - name: KONG_PG_HOST
-            value: kong-database # Reemplaza
+            value: kong-database.kong.svc.cluster.local # Reemplaza
           - name: KONG_PG_PORT
             value: "5432"
           - name: KONG_PG_DATABASE
