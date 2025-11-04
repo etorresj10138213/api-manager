@@ -45,22 +45,13 @@ spec:
             END IF;
           END \$\$"
           
-          # 2. Crear BBDD 'kong' con OWNER 'kong' si no existe
-          psql -d postgres -c "DO \$\$
-          BEGIN
-            IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'kong') THEN
-              CREATE DATABASE kong OWNER kong;
-              RAISE NOTICE 'Base de datos kong creada exitosamente.';
-            END IF;
-          END \$\$"
+          # 2. Crear BBDD 'kong' si no existe (¡CORRECCIÓN: Se usa Shell Condicional!)
+          # -tAc: Tablas, solo datos, único comando. Consulta si existe la DB 'kong'.
+          # | grep -q 1: Si la consulta devuelve '1' (existe), no hace nada.
+          # || psql...: Si la consulta falla (no existe), ejecuta CREATE DATABASE.
+          psql -h $PGHOST -U $PGUSER -tAc "SELECT 1 FROM pg_database WHERE datname='kong'" | grep -q 1 || psql -h $PGHOST -U $PGUSER -c "CREATE DATABASE kong OWNER kong"
           
-          # 3. Crear BBDD 'konga_db' con OWNER 'kong' si no existe
-          psql -d postgres -c "DO \$\$
-          BEGIN
-            IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'konga_db') THEN 
-              CREATE DATABASE konga_db OWNER kong;
-              RAISE NOTICE 'Base de datos konga_db creada exitosamente.';
-            END IF;
-          END \$\$"
+          # 3. Crear BBDD 'konga_db' si no existe (Basado en tu mensaje de error)
+          psql -h $PGHOST -U $PGUSER -tAc "SELECT 1 FROM pg_database WHERE datname='konga_db'" | grep -q 1 || psql -h $PGHOST -U $PGUSER -c "CREATE DATABASE konga_db OWNER kong"
           
-          echo "Inicialización de la base de datos completada."
+          echo "Inicialización de la base de datos completada."  
