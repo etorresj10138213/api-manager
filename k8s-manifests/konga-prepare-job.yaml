@@ -20,8 +20,8 @@ spec:
           - name: DB_PORT
             value: "5432"
           - name: DB_USER
-            value: postgres # ⬅️ Usuario de la DB de Konga
+            value: kong # ⬅️ Usuario de la DB de Konga
           - name: DB_DATABASE
-            value: postgres # ⬅️ Nombre de la DB de Konga (ej. "konga")
+            value: konga_db # ⬅️ Nombre de la DB de Konga (ej. "konga")
           - name: DB_PASSWORD
-            value: admin
+            value: kong

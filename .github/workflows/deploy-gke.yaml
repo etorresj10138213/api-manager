@@ -74,12 +74,15 @@ jobs:
           # Aplicar los manifiestos de Kubernetes
           kubectl apply -n kong -f k8s-manifests/postgres-deployment.yaml
           kubectl apply -n kong -f k8s-manifests/postgres-service.yaml
-          sleep 30
+          sleep 20
           kubectl apply -n kong -f k8s-manifests/kong-db-init-job.yaml
-          sleep 30
+          sleep 20
           kubectl apply -n kong -f k8s-manifests/konga-prepare-job.yaml
+          sleep 20
+          kubectl apply -n kong -f k8s-manifests/kong-migrations.yaml
+          sleep 20
           kubectl apply -n kong -f k8s-manifests/kong-deployment.yaml
-          sleep 30
+          sleep 20
           kubectl apply -n kong -f k8s-manifests/konga-deployment.yaml
 
 

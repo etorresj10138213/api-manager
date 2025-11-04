@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kong-migrations-job
+  namespace: kong # Asegúrate de que este sea tu namespace de Kong
+spec:
+  template:
+    spec:
+      # Se recomienda usar un ServiceAccount específico, si no se usa 'default'
+      serviceAccountName: default # Reemplaza si tienes uno personalizado
+      restartPolicy: OnFailure
+      containers:
+      - name: kong-migrations
+        image: kong:latest # Usa la misma versión de Kong que usarás para el gateway
+        imagePullPolicy: IfNotPresent
+        env:
+          # --- CONFIGURACIÓN DE LA BASE DE DATOS ---
+          - name: KONG_DATABASE
+            value: "kong"
+          
+          # HOST y PUERTO del PostgreSQL externo
+          - name: KONG_PG_HOST
+            value: kong-database # Reemplaza
+          - name: KONG_PG_PORT
+            value: "5432"
+          - name: KONG_PG_DATABASE
+            value: "postgres" # Reemplaza con el nombre de tu base de datos
+
+          # USUARIO: Obtiene el valor de un Secret de Kubernetes (Recomendado)
+          - name: KONG_PG_USER
+            value: "postgres"
+          # CONTRASEÑA: Obtiene el valor de un Secret de Kubernetes (Recomendado)
+          - name: KONG_PG_PASSWORD
+            value: "admin"
+
+        # El comando que inicializa el esquema de la base de datos
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Esperando por la base de datos..."
+            # Simple espera antes de ejecutar las migraciones (opcional pero útil)
+            sleep 5
+            
+            # Ejecuta el comando de creación de tablas
+            kong migrations bootstrap
+            
+            echo "Migraciones completadas."
