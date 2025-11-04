@@ -15,10 +15,6 @@ spec:
         app: kong
     spec:
       # Init Container para esperar que las migraciones terminen
-      initContainers:
-      - name: wait-for-migrations
-        image: busybox
-        command: ['sh', '-c', 'until nslookup kong-database; do echo waiting for db; sleep 2; done;'] # Simple espera DNS
       containers:
       - name: kong
         image: kong:latest # Será reemplazada por GCR en el pipeline

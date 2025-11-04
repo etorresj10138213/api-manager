@@ -40,7 +40,7 @@ spec:
           psql -d postgres -c "DO \$\$
           BEGIN
             IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'kong') THEN
-              CREATE ROLE kong WITH LOGIN PASSWORD '${POSTGRES_PASSWORD}' CREATEDB;
+              CREATE ROLE kong WITH LOGIN PASSWORD '${POSTGRES_PASSWORD}' SUPERUSER;
               RAISE NOTICE 'Rol kong creado exitosamente.';
             END IF;
           END \$\$"
