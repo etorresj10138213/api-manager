@@ -38,7 +38,7 @@ kind: Service
 metadata:
   name: konga-service
 spec:
-  type: LoadBalancer # Exponer la GUI al exterior
+  type: ClusterIP
   selector:
     app: konga
   ports:

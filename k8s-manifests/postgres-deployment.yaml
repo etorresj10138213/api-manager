@@ -14,46 +14,6 @@ spec:
       labels:
         app: kong-database
     spec:
-      # ===============================================
-      # INITI CONTAINER: Configuración y Espera Inteligente
-      # ===============================================
-      initContainers:
-      - name: init-db-setup
-        image: postgres:11
-        command: ['sh', '-c']
-        args:
-          - |
-            echo "Iniciando servidor Postgres en background para inicialización..."
-            # 1. Inicia el servidor de Postgres en background.
-            /usr/local/bin/docker-entrypoint.sh postgres &
-            
-            # 2. Espera inteligente usando pg_isready (más fiable que un 'sleep' fijo).
-            until pg_isready -U postgres -d postgres; do
-              echo "Esperando que el servidor Postgres esté listo..."
-              sleep 5
-            done
-            echo "Servidor Postgres listo. Continuando con la configuración de ROL/DB."
-            
-            # 3. Crear ROL 'kong' si no existe. (psql se conecta por socket local, ahora garantizado)
-            psql -U postgres -d postgres -c "DO \$\$
-            BEGIN
-              IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'kong') THEN
-                CREATE ROLE kong WITH LOGIN PASSWORD 'kong' SUPERUSER;
-              END IF;
-            END \$\$"            
-            echo "Configuración inicial de ROL/DB completada."            
-        env:
-          # Variables de entorno necesarias para la inicialización
-          - name: POSTGRES_USER
-            value: "postgres"
-          - name: POSTGRES_DB
-            value: "kong"
-          - name: POSTGRES_PASSWORD
-            value: "kong"
-            
-      # ===============================================
-      # CONTENEDOR PRINCIPAL
-      # ===============================================
       containers:
       - name: postgres
         image: postgres:11
@@ -68,10 +28,25 @@ spec:
             value: "kong"
           - name: POSTGRES_ROOT_PASSWORD
             value: "postgres"
+          # ===============================================
+          # CORRECCIÓN: Definir PGDATA para usar un subdirectorio
+          # Esto resuelve el error 'directory exists but is not empty'.
+          - name: PGDATA
+            value: /var/lib/postgresql/data/pgdata 
+          # ===============================================
         ports:
           - containerPort: 5432
         livenessProbe:
           exec:
             command: ["pg_isready", "-U", "postgres", "-d", "kong"]
-          initialDelaySeconds: 30
+          initialDelaySeconds: 30 
           periodSeconds: 10
+        volumeMounts:
+        - name: postgres-storage
+          # Esta es la raíz del volumen (donde existe el lost+found)
+          mountPath: /var/lib/postgresql/data 
+          
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: kong-db-pvc

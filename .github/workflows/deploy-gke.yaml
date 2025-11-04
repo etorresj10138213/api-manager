@@ -72,6 +72,7 @@ jobs:
           sed -i "s|image: pantsel/konga:next|image: ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONGA_IMAGE_NAME }}:latest|g" k8s-manifests/konga-deployment.yaml
 
           # Aplicar los manifiestos de Kubernetes
+          kubectl apply -n kong -f k8s-manifests/kong-db-pvc.yaml
           kubectl apply -n kong -f k8s-manifests/postgres-deployment.yaml
           kubectl apply -n kong -f k8s-manifests/postgres-service.yaml
           sleep 20
