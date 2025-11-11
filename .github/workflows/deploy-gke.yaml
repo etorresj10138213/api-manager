@@ -102,10 +102,10 @@ jobs:
           istioctl version
           
           istioctl install --set profile=default \
-            --set meshConfig.enableTracing=true \
-            --set meshConfig.defaultProviders.tracing="telemetry/otel-collector" \
-            --set values.telemetry.v1.zipkin.address="zipkin.istio-system:9411" \
-            -y
+          --set meshConfig.enableTracing=true \
+          --set meshConfig.extensionProviders[0].name=zipkin \
+          --set meshConfig.extensionProviders[0].zipkin.service="zipkin.istio-system:9411" \
+          -y
             
           # 4. Instalar Addons (Prometheus, Grafana, Kiali) y Zipkin
           kubectl apply -f samples/addons/prometheus.yaml
