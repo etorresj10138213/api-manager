@@ -86,28 +86,38 @@ jobs:
           sleep 20
           kubectl apply -n kong -f k8s-manifests/konga-deployment.yaml
 
-
       - name: Desplegar Istio
         run: |
-        # Define la versión de Istio
+          # Define la versión de Istio
           export ISTIO_VERSION=1.22.2
-        # 1. Descarga el paquete de Istio
+          
+          # 1. Descarga el paquete de Istio
           curl -L https://istio.io/downloadIstio | ISTIO_VERSION=${ISTIO_VERSION} sh -
-        # 2. Navega al directorio de Istio
+          
+          # 2. Navega al directorio de Istio para mover istioctl
           cd istio-${ISTIO_VERSION}
-        # 3. Mueve 'istioctl' al path (para que esté disponible en cualquier parte)
           sudo mv bin/istioctl /usr/local/bin/
-        # 4. Verifica la instalación e instaka Istio
+          
+          # 3. Verifica la instalación e instala Istio con el perfil 'default' y configuración de Zipkin
           istioctl version
-          istioctl install --set profile=default -y
+          
+          istioctl install --set profile=default \
+            --set meshConfig.enableTracing=true \
+            --set meshConfig.defaultProviders.tracing="telemetry/otel-collector" \
+            --set values.telemetry.v1.zipkin.address="zipkin.istio-system:9411" \
+            -y
+            
+          # 4. Instalar Addons (Prometheus, Grafana, Kiali) y Zipkin
           kubectl apply -f samples/addons/prometheus.yaml
           kubectl apply -f samples/addons/grafana.yaml
           kubectl apply -f samples/addons/kiali.yaml
-          istioctl install --set profile=default --set meshConfig.enableTracing=true --set meshConfig.defaultProviders.tracing="telemetry/otel-collector" --set values.telemetry.v1.zipkin.address="zipkin.istio-system:9411" -y
+          kubectl apply -f https://k8s.io/examples/admin/zipkin/zipkin-deployment.yaml -n istio-system
+          
+          # 5. Reiniciar Istiod y aplicaciones
           kubectl rollout restart deployment istiod -n istio-system
           kubectl rollout restart deployment -n kong
+          
+          # 6. Aplica Gateway y VirtualService
           cd ..
           kubectl apply -n istio-system -f k8s-manifests/istio-gateway.yaml
           kubectl apply -n istio-system -f k8s-manifests/konga-vs.yaml
-
-
