@@ -39,7 +39,7 @@ jobs:
       - name: Autenticación en GCR
         run: gcloud auth configure-docker ${{ env.IMAGE_REGISTRY }}
 
-      # 4. Construir y Etiquetar Imágenes 🏗️
+      # 4. Construir y Etiquetar Imágenes 
       - name: Construir y etiquetar Kong
         run: |
           docker pull kong:latest
@@ -50,7 +50,7 @@ jobs:
           docker pull pantsel/konga:next
           docker tag pantsel/konga:next ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONGA_IMAGE_NAME }}:latest
 
-      # 5. Subir Imágenes a GCR ⬆️
+      # 5. Subir Imágenes a GCR ⬆
       - name: Subir imagen de Kong a GCR
         run: docker push ${{ env.IMAGE_REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.KONG_IMAGE_NAME }}:latest
 
@@ -85,5 +85,29 @@ jobs:
           kubectl apply -n kong -f k8s-manifests/kong-deployment.yaml
           sleep 20
           kubectl apply -n kong -f k8s-manifests/konga-deployment.yaml
+
+
+      - name: Desplegar Istio
+        run: |
+        # Define la versión de Istio
+          export ISTIO_VERSION=1.22.2
+        # 1. Descarga el paquete de Istio
+          curl -L https://istio.io/downloadIstio | ISTIO_VERSION=${ISTIO_VERSION} sh -
+        # 2. Navega al directorio de Istio
+          cd istio-${ISTIO_VERSION}
+        # 3. Mueve 'istioctl' al path (para que esté disponible en cualquier parte)
+          sudo mv bin/istioctl /usr/local/bin/
+        # 4. Verifica la instalación e instaka Istio
+          istioctl version
+          istioctl install --set profile=default -y
+          kubectl apply -f samples/addons/prometheus.yaml
+          kubectl apply -f samples/addons/grafana.yaml
+          kubectl apply -f samples/addons/kiali.yaml
+          istioctl install --set profile=default --set meshConfig.enableTracing=true --set meshConfig.defaultProviders.tracing="telemetry/otel-collector" --set values.telemetry.v1.zipkin.address="zipkin.istio-system:9411" -y
+          kubectl rollout restart deployment istiod -n istio-system
+          kubectl rollout restart deployment -n kong
+          cd ..
+          kubectl apply -n istio-system -f k8s-manifests/istio-gateway.yaml
+          kubectl apply -n istio-system -f k8s-manifests/konga-vs.yaml
 
 

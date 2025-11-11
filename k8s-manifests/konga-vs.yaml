@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: konga-vs
+  namespace: istio-system # O el namespace donde esté tu Gateway
+spec:
+  gateways:
+  - istio-ingressgateway
+  hosts:
+  - "*" # Aplica a todos los hosts, Istio usará el path para el routing
+  http:
+  - match:
+    - uri:
+        prefix: /konga # Coincide con cualquier ruta que comience con /konga
+    rewrite: # <--- BLOQUE DE REESCRITURA
+      uri: / # Reescribe el prefijo /konga por la raíz /
+    route:
+    - destination:
+        host: konga-service.kong.svc.cluster.local
+        port:
+          number: 1337
