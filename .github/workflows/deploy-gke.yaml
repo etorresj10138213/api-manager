@@ -1,4 +1,4 @@
-name: Despliegue de Kong y Konga a GKE
+name: Despliegue de Kong y Konga a GKE Auto
 
 on:
   push:
