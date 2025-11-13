@@ -11,7 +11,7 @@ spec:
   http:
   - match:
     - uri:
-        prefix: /konga # Coincide con cualquier ruta que comience con /konga
+        prefix: / # Coincide con cualquier ruta que comience con /konga
     rewrite: # <--- BLOQUE DE REESCRITURA
       uri: / # Reescribe el prefijo /konga por la raíz /
     route:
