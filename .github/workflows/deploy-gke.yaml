@@ -111,14 +111,13 @@ jobs:
           kubectl apply -f samples/addons/prometheus.yaml
           kubectl apply -f samples/addons/grafana.yaml
           kubectl apply -f samples/addons/kiali.yaml
-          cd ..
-          kubectl apply -f k8s-manifests/zipkin.yaml
-          kubectl apply -f k8s-manifests/telemetry.yaml
-
+          kubectl apply -f samples/addons//extras/zipkin.yaml 
+          
           # 5. Reiniciar Istiod y aplicaciones
           kubectl rollout restart deployment istiod -n istio-system
           kubectl rollout restart deployment -n kong
           
           # 6. Aplica Gateway y VirtualService
+          cd ..
           kubectl apply -n istio-system -f k8s-manifests/istio-gateway.yaml
           kubectl apply -n istio-system -f k8s-manifests/konga-vs.yaml
